@@ -1,0 +1,7 @@
+name: volume_calc
+dependencies:
+  - matplotlib
+  - scikit-image
+  - gdal
+  - opencv
+  - pandas
