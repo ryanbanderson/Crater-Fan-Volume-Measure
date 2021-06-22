@@ -6,6 +6,21 @@ These scripts require a set of identically-sized DEMs for the crater of interest
 1. In ArcMap, zoom so that the crater of interest fills the field of view. Create a <a href="https://desktop.arcgis.com/en/arcmap/10.3/map/working-with-arcmap/using-spatial-bookmarks.htm">spatial bookmark</a> so that you can return to this exact view in the future if needed.
 2. <a href="https://help.arcgis.com/en/arcgisdesktop/10.0/help/index.html#/Exporting_a_raster_in_ArcMap/009t00000063000000%20/">Export</a> DEM constrained to the current display extent.
 3. <a href="https://resources.arcgis.com/en/help/main/10.1/index.html#//00s90000001v000000">Convert</a> fan and catchment polygons to graphics.
-4. Select all fan and catchment graphics. <a hreaf="https://www.esri.com/arcgis-blog/products/product/analytics/clipping-an-image-or-raster-in-arcgis/">Export DEM using selected graphics, clipping inside.</a> This will create a clipped DEM, with data inside the fan and catchment polygons replaced with NoData.
+4. Select all fan and catchment graphics. <a href="https://www.esri.com/arcgis-blog/products/product/analytics/clipping-an-image-or-raster-in-arcgis/">Export DEM using selected graphics, clipping inside.</a> This will create a clipped DEM, with data inside the fan and catchment polygons replaced with NoData.
 5. Now repeat step 4 with each individual fan and catchment selected. This will create versions of the DEM with each feature clipped out, to be used later as masks to get the volume for each feature.
 6. See the example in calc_volume.py which shows how to use these DEMs as input to the scripts.
+
+To run the python scripts:
+1. Install <a href="https://www.anaconda.com/products/individual">Anaconda</a>.
+2. Download and unzip the code from this repository.
+3. From the directory where you unzipped the code, run the following command (Use the Anaconda prompt if on Windows):
+
+```conda env create -f environment.yml```
+
+And then activate the environment:
+
+```conda activate volume_calc```
+
+4. Edit the example in the file calc_volume.py to point to the correct files for your system, and to specify the options desired. Then, from the directory where calc_volume.py is, run it by entering:
+
+```python calc_volume.py```
