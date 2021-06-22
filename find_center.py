@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plot
 import numpy as np
 
+#Function to get x and y coordinates from the first 10 clicks, then close the image.
 def onclick(event):
     x.append(event.xdata)
     y.append(event.ydata)
@@ -15,15 +16,23 @@ def onclick(event):
         plot.close()
 
 
+'''
+This script takes a DEM image as input, and allows the user to click 10 points along the rim. A circle is fit to the
+points and the center coordinates are returned
+'''
 def circlefit(dem):
+    #define x and y as global list variables
     global x,y
     x = []
     y = []
+
+    #show the DEM
     plot.imshow(dem)
     ax = plot.gca()
     fig = plot.gcf()
     fig.suptitle('Click 10 points on the crater rim to fit with a circle:')
 
+    #Set up to run the function onclick every time the user clicks the image
     global cid
     cid = fig.canvas.mpl_connect('button_press_event',onclick)
     plot.show()
