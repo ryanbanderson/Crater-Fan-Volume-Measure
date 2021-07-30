@@ -21,6 +21,6 @@ And then activate the environment:
 
 ```conda activate volume_calc```
 
-4. Edit the example in the file calc_volume.py to point to the correct files for your system, and to specify the options desired. Then, from the directory where calc_volume.py is, run it by entering:
+4. Edit the example in the file run_calc_volume.py to point to the correct files for your system, and to specify the options desired. Then, from the directory where run_calc_volume.py is, run it by entering:
 
-```python calc_volume.py```
+```python run_calc_volume.py```
