@@ -8,7 +8,7 @@ These scripts require a set of identically-sized DEMs for the crater of interest
 3. <a href="https://resources.arcgis.com/en/help/main/10.1/index.html#//00s90000001v000000">Convert</a> fan and catchment polygons to graphics.
 4. Select all fan and catchment graphics. <a href="https://www.esri.com/arcgis-blog/products/product/analytics/clipping-an-image-or-raster-in-arcgis/">Export DEM using selected graphics, clipping inside.</a> This will create a clipped DEM, with data inside the fan and catchment polygons replaced with NoData.
 5. Now repeat step 4 with each individual fan and catchment selected. This will create versions of the DEM with each feature clipped out, to be used later as masks to get the volume for each feature.
-6. See the example in calc_volume.py which shows how to use these DEMs as input to the scripts.
+6. See the example in run_calc_volume.py which shows how to use these DEMs as input to the scripts.
 
 To run the python scripts:
 1. Install <a href="https://www.anaconda.com/products/individual">Anaconda</a>.
