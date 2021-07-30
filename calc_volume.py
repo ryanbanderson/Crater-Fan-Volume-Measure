@@ -6,6 +6,7 @@ import numpy as np
 import dem_interp
 import pandas as pd
 
+
 #Writes the filled DEM to a GDAL file, borrowing properties from the original DEM
 def write_gdal(demfile, filled, filledfile, nodataval = 32767):
     print('Saving '+filledfile)
@@ -42,13 +43,12 @@ rsize = Number of radial steps to use when converting the image to polar coordin
 tsize = Number of angular steps to use when converting the image to polar coordinates
 bad_data = Value interpreted as bad data. Default is the ArcGIS value of 32767.
 method = Which interpolation method to use. See do_calc_vol for more details.
-profile_type = Which type of profile to use if the method is 'profile'. See do_calc_vol for more details.
 cratername = Name of the crater used in output files.
 outpath = Directory in which to save results.
 savefigs = Set to true to save png figures of the stages of the DEM filling.
                
 '''
-def fill_dem(dem_clipped, crater_center, rsize, tsize, bad_data = 32767, method = 'profile', profile_type = 'mean',
+def fill_dem(dem_clipped, crater_center, rsize, tsize, bad_data = 32767, method = 'annular',
              cratername='crater', outpath='', savefigs=True):
     if method == 'annular':
         dem_filled = dem_interp.dem_interp_annular(dem_clipped, crater_center, rsize, tsize, bad_data_value=bad_data,
@@ -63,10 +63,23 @@ def fill_dem(dem_clipped, crater_center, rsize, tsize, bad_data = 32767, method 
     if method == 'linear':
         dem_filled = dem_interp.dem_interp(dem_clipped, method=method, bad_data_value=bad_data,
                                            cratername=cratername,outpath=outpath,savefigs=savefigs)
-    if method == 'profile':
+    if method == 'mean':
         dem_filled = dem_interp.dem_interp_profile(dem_clipped, crater_center,rsize, tsize, bad_data_value=bad_data,
-                                                       profile_type=profile_type, cratername=cratername,
+                                                       profile_type=method, cratername=cratername,
                                                         outpath=outpath,savefigs=savefigs)
+    if method == 'min':
+        dem_filled = dem_interp.dem_interp_profile(dem_clipped, crater_center, rsize, tsize, bad_data_value=bad_data,
+                                                   profile_type=method, cratername=cratername,
+                                                   outpath=outpath, savefigs=savefigs)
+    if method == 'median':
+        dem_filled = dem_interp.dem_interp_profile(dem_clipped, crater_center, rsize, tsize, bad_data_value=bad_data,
+                                                   profile_type=method, cratername=cratername,
+                                                   outpath=outpath, savefigs=savefigs)
+    if method == 'max':
+        dem_filled = dem_interp.dem_interp_profile(dem_clipped, crater_center, rsize, tsize, bad_data_value=bad_data,
+                                                   profile_type=method, cratername=cratername,
+                                                   outpath=outpath, savefigs=savefigs)
+
     return dem_filled
 
 
@@ -121,9 +134,6 @@ methods = List of methods to use for filling the DEM. Options include:
     'annular' = Topography is interpolated in annular rings 
     'radial' = Topography is interpolated radially
     'cubic' = Topography is interpolated using cubic interpolation (In my experience, tends to be slow and give crazy results...)
-    'linear' = Topography is linearly interpolated (Also tends to be slow and gives iffy results...)
-    'profile' = Topography is filled in based on a profile of the good data of the crater
-profile_type = List of profile types. Must be the same length as the list of Methods, so fill with None to correspond with non-profile methods
     'median' = Profile calculated from the median of topography at each radial distance 
     'mean' = Profile calculated from the mean of topography at each radial distance
     'min' = Profile calculated from the min of topography at each radial distance
@@ -138,7 +148,7 @@ savefigs = Set to true to save png figures of the stages of the DEM filling.
                
 
 '''
-def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_match, methods, profile_type, crater_center=None,
+def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_match, methods, crater_center=None,
                 bad_data = 32767, pixel_size=20.0, outpath = '', cratername= 'crater', savefigs=True):
 
     dem = io.imread(dem_file)
@@ -154,7 +164,7 @@ def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_matc
         crater_center = np.squeeze(find_center.circlefit(dem))
     print('Crater center is '+str(crater_center))
 
-    results = pd.DataFrame(columns = ['crater','center_x','center_y','fan','fan_volume','catchment','catchment_volume','method','profile'])
+    results = pd.DataFrame(columns = ['crater','center_x','center_y','fan','fan_volume','catchment','catchment_volume','method'])
 
     for i in np.arange(len(methods)):
         rsize = int(np.sqrt(crater_center[0] ** 2 + crater_center[1] ** 2))  # number of radial steps
@@ -162,12 +172,12 @@ def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_matc
 
         print('Filling gaps using method: ' + methods[i])
         outstr = methods[i]
-        if methods[i] == 'profile':
-            print('Profile type: ' + profile_type[i])
-            outstr = outstr + '_' + profile_type[i]
+
+        if savefigs:
+            dem_interp.save_dem_fig(dem,cratername+'_original.png',outpath,bad_data_value=bad_data)
 
         dem_filled = fill_dem(dem_clipped, crater_center, rsize,tsize, bad_data=bad_data, method=methods[i],
-                        profile_type=profile_type[i],cratername=cratername,outpath=outpath,savefigs=savefigs)
+                        cratername=cratername,outpath=outpath,savefigs=savefigs)
 
         #save the filled DEM with the same spatial information as the original DEM
         basename = os.path.basename(dem_clipped_file).split('.')[0]
@@ -182,7 +192,7 @@ def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_matc
         for key in fan_catchment_match:
             tmp = {'crater':[cratername],'center_x':[crater_center[0]],'center_y':[crater_center[1]],'fan':[key],
                    'fan_volume':[volumes[key]],'catchment':[fan_catchment_match[key]],'catchment_volume':[volumes[fan_catchment_match[key]]],
-                   'method':[methods[i]],'profile':[profile_type[i]]}
+                   'method':[methods[i]]}
             tmp_df = pd.DataFrame.from_dict(tmp)
 
             results = pd.concat((results,tmp_df))
@@ -191,28 +201,3 @@ def do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_matc
     results.to_csv(outpath+cratername+'_cal_volume_results.csv')
 
     return results
-
-
-######## Begin Example ##########
-dem_file = r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_crop.tif"
-dem_clipped_file = r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_clip_catchments_fans.tif"
-dem_feature_files = {'SW_fan':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_clip_fans_SW.tif",
-                     'SSW_fan':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_clip_fans_SSW.tif",
-                     'NE_fan':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_clip_fans_NE.tif",
-                     'ENE_fan':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_clip_fans_ENE.tif",
-                     'ENE':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_crop_catchment_clip_ENE.tif",
-                     'NE':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_crop_catchment_clip_NE.tif",
-                     'SSW':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_crop_catchment_clip_SSW.tif",
-                     'SW':r"E:\Work\Sinuous Ridges\DTMs\MOLA_HRSC_CTX_20190923_Harris_crop_catchment_clip_SW.tif"}
-
-fan_catchment_match = {'SW_fan':'SW',
-                       'SSW_fan':'SSW',
-                       'NE_fan':'NE',
-                       'ENE_fan':'ENE'}
-methods = ['annular', 'radial', 'profile','profile','profile','profile']#,'linear']
-profile_type = [None, None, 'mean','median','min','max']#,'none']
-outpath = r"E:\Work\Sinuous Ridges\DTMs\\"
-cratername = 'debug'
-
-do_calc_vol(dem_file,dem_clipped_file, dem_feature_files, fan_catchment_match, methods, profile_type, crater_center=None,
-                bad_data = 32767, pixel_size=20.0, outpath = outpath,cratername=cratername, savefigs=True)
