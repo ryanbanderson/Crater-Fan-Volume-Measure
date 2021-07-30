@@ -4,12 +4,23 @@ import copy
 import matplotlib.pyplot as plot
 import cv2
 
-#This function saves the dem as a png for use as a figure
-def save_dem_fig (dem_to_save, name, outpath, bad_data_value = 32767):
+#This function saves the dem as a png for use as a figure.
+def save_dem_fig (dem_to_save, name, outpath, bad_data_value = [32767], colorbar=True):
+    if not isinstance(bad_data_value,list):
+        bad_data_value = [bad_data_value]
     dem_for_fig = copy.deepcopy(dem_to_save)
-    dem_for_fig[dem_for_fig == bad_data_value] = np.max(dem_for_fig[dem_for_fig != bad_data_value])
-    plot.imsave(outpath+name, dem_for_fig)
+    for bad in bad_data_value:
+        dem_for_fig[dem_for_fig==bad] = np.max(dem_for_fig[dem_for_fig!=bad])
+    plot.imshow(dem_for_fig,cmap='viridis')
+    if colorbar: plot.colorbar(location='bottom')
+    fig = plot.gcf()
+    fig.tight_layout()
+    ax = plot.gca()
+    ax.set_xticks([])
+    ax.set_yticks([])
+    fig.savefig(outpath+name, dpi=1000)
     plot.close()
+
 
 #This function does 2D interpolation to fill in holes in teh DEM. This can be time-consuming and results can be unrealistic...
 def dem_interp(dem_with_holes, bad_data_value = 32767, method = 'cubic', cratername = 'crater', outpath='', savefigs = True):
@@ -27,12 +38,11 @@ def dem_interp(dem_with_holes, bad_data_value = 32767, method = 'cubic', cratern
 
 #This function does linear interpolation along rings of constant radius to fill in the gaps in the DEM.
 def dem_interp_annular(dem_with_holes,center, rsize, tsize, bad_data_value = 32767, cratername = 'crater', outpath= '',  savefigs = True):
-    if savefigs: save_dem_fig (dem_with_holes, cratername+'_with_holes.png', outpath, bad_data_value = bad_data_value)
+    if savefigs: save_dem_fig (dem_with_holes, cratername+'_with_holes.png', outpath, bad_data_value = [bad_data_value])
 
     print("'Unwrapping' the image into a rectangle where the axes are theta, radius")
     polar_img = cv2.warpPolar(dem_with_holes,(rsize, tsize),(center[0], center[1]), maxRadius=rsize, flags=cv2.INTER_NEAREST)
-
-    if savefigs: save_dem_fig(polar_img, cratername+'_polar.png', outpath, bad_data_value=bad_data_value)
+    if savefigs: save_dem_fig(polar_img, cratername+'_polar.png', outpath, bad_data_value=[bad_data_value,0],colorbar=False)
 
     print('Interpolating each annulus')
     for r in np.arange(polar_img.shape[1]):
@@ -58,7 +68,7 @@ def dem_interp_annular(dem_with_holes,center, rsize, tsize, bad_data_value = 327
     print('Re-wrap the filled image back to x,y coordinates')
     dem_filled = cv2.warpPolar(polar_img,dem_with_holes.shape[::-1],(center[0],center[1]),maxRadius=rsize, flags=cv2.INTER_NEAREST+cv2.WARP_INVERSE_MAP)
 
-    if savefigs: save_dem_fig(dem_filled, cratername+'_filled_annular.png', outpath, bad_data_value=bad_data_value)
+    if savefigs: save_dem_fig(dem_filled, cratername+'_filled_annular.png', outpath, bad_data_value=[bad_data_value,0])
 
     return dem_filled
 
